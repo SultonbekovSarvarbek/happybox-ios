@@ -1,0 +1,9 @@
+//
+//  Debug.xcconfig
+//  HappyBoxApp
+//
+//  Created by Sultonbekov Sarvar on 11/01/26.
+//
+
+// Import secrets (proxy URL, etc.)
+#include "../Secrets.xcconfig"

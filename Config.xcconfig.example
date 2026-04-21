@@ -1,0 +1,6 @@
+// Configuration Template for HappyBoxApp
+// Copy this file to Secrets.xcconfig and fill in your actual values
+// Secrets.xcconfig is gitignored for security
+
+// Backend API base URL (use http://localhost:3000 for local dev)
+API_BASE_URL = https:/$()/happybox.uz
