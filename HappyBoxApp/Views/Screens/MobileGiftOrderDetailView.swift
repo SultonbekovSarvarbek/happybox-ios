@@ -137,6 +137,18 @@ struct MobileGiftOrderDetailView: View {
                         Divider().padding(.leading, 52)
                         DetailRow(icon: "ticket.fill", label: "Сумма", value: order.formattedTotalAmount)
                     }
+                    if let handle = order.partner?.instagram, !handle.isEmpty {
+                        let clean = handle.replacingOccurrences(of: "@", with: "")
+                        Divider().padding(.leading, 52)
+                        Button {
+                            if let url = URL(string: "https://instagram.com/\(clean)") {
+                                openURL(url)
+                            }
+                        } label: {
+                            DetailRow(icon: "camera.fill", label: "Instagram", value: "@\(clean)")
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
                 .background(Color(.systemBackground))
 
