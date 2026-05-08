@@ -113,10 +113,17 @@ struct MobileGiftOrderDetailView: View {
 
                 // Recipient / sender info
                 VStack(spacing: 0) {
+                    let primaryName = mode == .sent ? order.recipientName : order.senderName
+                    let registeredUser = mode == .sent ? order.recipientUser : order.senderUser
+                    let registeredName = registeredUser?.displayName ?? ""
+                    let showRegistered = !registeredName.isEmpty
+                        && registeredName.lowercased() != primaryName.lowercased()
+
                     DetailRow(
                         icon: mode == .sent ? "person.crop.circle.fill" : "person.crop.circle",
                         label: mode == .sent ? "Получатель" : "Отправитель",
-                        value: mode == .sent ? order.recipientName : order.senderName
+                        value: primaryName,
+                        sub: showRegistered ? "В HappyBox: \(registeredName)" : nil
                     )
                     Divider().padding(.leading, 52)
                     DetailRow(
@@ -183,6 +190,7 @@ private struct DetailRow: View {
     let icon: String
     let label: String
     let value: String
+    var sub: String? = nil
 
     var body: some View {
         HStack(spacing: 14) {
@@ -198,6 +206,11 @@ private struct DetailRow: View {
                     .foregroundStyle(.secondary)
                 Text(value)
                     .font(.body)
+                if let sub, !sub.isEmpty {
+                    Text(sub)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
             }
             Spacer()
         }

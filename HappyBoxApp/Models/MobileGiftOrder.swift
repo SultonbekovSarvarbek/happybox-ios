@@ -16,12 +16,28 @@ struct MobileGiftOrder: Decodable, Identifiable, Sendable {
     let remainingAmount: Double?
     let recipientName: String
     let recipientPhone: String
+    let recipientUser: GiftOrderUser?
     let senderName: String
     let senderPhone: String
+    let senderUser: GiftOrderUser?
     let partner: GiftOrderPartner?
     let certificate: GiftOrderCert?
     let redemptions: [GiftOrderRedemption]
     let createdAt: String
+
+    struct GiftOrderUser: Decodable, Sendable {
+        let firstName: String?
+        let lastName: String?
+        let username: String?
+
+        var displayName: String {
+            let first = firstName ?? ""
+            let last = lastName ?? ""
+            let combined = "\(first) \(last)".trimmingCharacters(in: .whitespaces)
+            if !combined.isEmpty { return combined }
+            return username ?? ""
+        }
+    }
 
     struct GiftOrderPartner: Decodable, Sendable {
         let id: String?
