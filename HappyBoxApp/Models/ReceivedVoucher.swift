@@ -13,11 +13,58 @@ struct ReceivedVoucher: Decodable, Identifiable, Sendable {
     let isRedeemed: Bool?
     let redeemedAt: String?
     let createdAt: String?
+    let initialAmount: String?
+    let remainingAmount: String?
+    let redemptions: [VoucherRedemptionItem]?
     let originalOwner: VoucherOwner?
     let purchaseRequest: VoucherPurchaseRequest?
 
     // Convenience accessor
     var certificate: VoucherCertificate? { purchaseRequest?.certificate }
+
+    var isBalanceBased: Bool { certificate?.isBalanceBased == true }
+
+    var remainingAmountNumber: Double? {
+        guard let v = remainingAmount, let n = Double(v) else { return nil }
+        return n
+    }
+
+    var formattedRemainingAmount: String? {
+        guard let n = remainingAmountNumber else { return nil }
+        return "\(Int(n).formatted()) сум"
+    }
+
+    var formattedInitialAmount: String? {
+        guard let v = initialAmount, let n = Double(v) else { return nil }
+        return "\(Int(n).formatted()) сум"
+    }
+
+    struct VoucherRedemptionItem: Decodable, Identifiable, Sendable {
+        let id: String
+        let amount: String
+        let note: String?
+        let createdAt: String
+
+        var amountNumber: Double { Double(amount) ?? 0 }
+
+        var formattedAmount: String {
+            "\(Int(amountNumber).formatted()) сум"
+        }
+
+        var formattedDate: String {
+            let iso = ISO8601DateFormatter()
+            iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            let fallback = ISO8601DateFormatter()
+            let formatter = DateFormatter()
+            formatter.dateStyle = .medium
+            formatter.timeStyle = .short
+            formatter.locale = Locale(identifier: "ru_RU")
+            if let date = iso.date(from: createdAt) ?? fallback.date(from: createdAt) {
+                return formatter.string(from: date)
+            }
+            return createdAt
+        }
+    }
 
     struct VoucherOwner: Decodable, Sendable {
         let id: String?
@@ -50,6 +97,7 @@ struct ReceivedVoucher: Decodable, Identifiable, Sendable {
         let subcategory: LabeledValue?
         let city: NamedObject?
         let district: NamedObject?
+        let isBalanceBased: Bool?
         let partner: VoucherPartner?
 
         struct LabeledValue: Decodable, Sendable {

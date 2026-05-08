@@ -85,16 +85,42 @@ struct PurchaseRequestDetailView: View {
                 if request.isPaid, let code = request.voucherCode {
                     let redeemed = request.isRedeemed
                     let transferred = request.isTransferred
+                    let isBalance = request.isBalanceBased
                     let cardColor: Color = redeemed || transferred ? .secondary : .green
                     VStack(spacing: 12) {
                         HStack(spacing: 8) {
                             Image(systemName: redeemed ? "xmark.seal.fill" : transferred ? "gift.fill" : "checkmark.seal.fill")
                                 .font(.system(size: 20))
                                 .foregroundStyle(redeemed ? Color.secondary : transferred ? Color.purple : Color.green)
-                            Text(redeemed ? "Сертификат использован" : transferred ? "Сертификат подарен" : "Сертификат подтверждён")
+                            Text(redeemed
+                                 ? (isBalance ? "Баланс израсходован" : "Сертификат использован")
+                                 : transferred ? "Сертификат подарен"
+                                 : (isBalance ? "Сертификат с балансом" : "Сертификат подтверждён"))
                                 .font(.subheadline)
                                 .fontWeight(.semibold)
                                 .foregroundStyle(redeemed ? Color.secondary : transferred ? Color.purple : Color.green)
+                        }
+
+                        // Balance card (balance-based, not transferred)
+                        if isBalance && !transferred, let remaining = request.formattedRemainingAmount {
+                            VStack(spacing: 6) {
+                                Text("Остаток на сертификате")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                Text(remaining)
+                                    .font(.system(size: 28, weight: .bold))
+                                    .foregroundStyle(redeemed ? Color.secondary : Color.green)
+                                if let initial = request.formattedInitialAmount,
+                                   let initN = request.initialAmountNumber,
+                                   let remN = request.remainingAmountNumber,
+                                   initN > 0, remN < initN {
+                                    Text("из \(initial)")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 8)
                         }
 
                         if !transferred {
@@ -128,19 +154,22 @@ struct PurchaseRequestDetailView: View {
                                 .clipShape(RoundedRectangle(cornerRadius: 10))
                             }
 
-                            Button {
-                                showGiftSheet = true
-                            } label: {
-                                HStack(spacing: 8) {
-                                    Image(systemName: "paperplane.fill")
-                                    Text("Отправить другому человеку")
-                                        .fontWeight(.semibold)
+                            // Gifting a partially-used balance voucher is confusing — hide it.
+                            if !isBalance {
+                                Button {
+                                    showGiftSheet = true
+                                } label: {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "paperplane.fill")
+                                        Text("Отправить другому человеку")
+                                            .fontWeight(.semibold)
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 12)
+                                    .background(Color.accentColor)
+                                    .foregroundStyle(.white)
+                                    .clipShape(RoundedRectangle(cornerRadius: 10))
                                 }
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
-                                .background(Color.accentColor)
-                                .foregroundStyle(.white)
-                                .clipShape(RoundedRectangle(cornerRadius: 10))
                             }
                         }
                     }
@@ -151,6 +180,46 @@ struct PurchaseRequestDetailView: View {
                         RoundedRectangle(cornerRadius: 0)
                             .stroke(cardColor.opacity(0.2), lineWidth: 1)
                     )
+
+                    Divider()
+                }
+
+                // Redemption history (balance-based only)
+                if request.isBalanceBased,
+                   let history = request.voucher?.redemptions,
+                   !history.isEmpty {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text("История списаний")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+
+                        ForEach(history) { item in
+                            HStack(spacing: 12) {
+                                Image(systemName: "minus.circle.fill")
+                                    .foregroundStyle(Color.orange)
+                                    .font(.system(size: 18))
+                                    .padding(.leading, 16)
+
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(item.formattedAmount)
+                                        .font(.system(size: 15, weight: .semibold))
+                                    if let note = item.note, !note.isEmpty {
+                                        Text(note).font(.caption).foregroundStyle(.secondary)
+                                    }
+                                    Text(item.formattedDate)
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                }
+
+                                Spacer()
+                            }
+                            .padding(.vertical, 10)
+                            Divider().padding(.leading, 48)
+                        }
+                    }
+                    .background(Color(.systemBackground))
 
                     Divider()
                 }
@@ -234,7 +303,10 @@ struct PurchaseRequestDetailView: View {
                         Divider().padding(.leading, 52)
                     }
 
-                    if let days = cert?.validDays, days > 0 {
+                    if request.isBalanceBased {
+                        DetailRow(icon: "infinity", label: "Срок действия", value: "Бессрочно", color: categoryColor)
+                        Divider().padding(.leading, 52)
+                    } else if let days = cert?.validDays, days > 0 {
                         DetailRow(icon: "clock.fill", label: "Срок действия", value: "\(days) дней", color: categoryColor)
                         Divider().padding(.leading, 52)
                     }

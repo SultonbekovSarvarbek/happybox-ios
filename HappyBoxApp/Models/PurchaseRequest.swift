@@ -63,10 +63,63 @@ struct PurchaseRequest: Decodable, Identifiable, Sendable {
         let isRedeemed: Bool?
         let originalOwnerId: String?
         let currentOwnerId: String?
+        let initialAmount: String?
+        let remainingAmount: String?
+        let redemptions: [VoucherRedemption]?
+    }
+
+    struct VoucherRedemption: Decodable, Identifiable, Sendable {
+        let id: String
+        let amount: String
+        let note: String?
+        let createdAt: String
+
+        var amountNumber: Double { Double(amount) ?? 0 }
+
+        var formattedAmount: String {
+            let n = Int(amountNumber)
+            return "\(n.formatted()) сум"
+        }
+
+        var formattedDate: String {
+            let iso = ISO8601DateFormatter()
+            iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            let fallback = ISO8601DateFormatter()
+            let formatter = DateFormatter()
+            formatter.dateStyle = .medium
+            formatter.timeStyle = .short
+            formatter.locale = Locale(identifier: "ru_RU")
+            if let date = iso.date(from: createdAt) ?? fallback.date(from: createdAt) {
+                return formatter.string(from: date)
+            }
+            return createdAt
+        }
     }
 
     var voucherCode: String? { voucher?.code }
     var voucherId: String? { voucher?.id }
+
+    var isBalanceBased: Bool { certificate?.isBalanceBased == true }
+
+    var remainingAmountNumber: Double? {
+        guard let v = voucher?.remainingAmount, let n = Double(v) else { return nil }
+        return n
+    }
+
+    var initialAmountNumber: Double? {
+        guard let v = voucher?.initialAmount, let n = Double(v) else { return nil }
+        return n
+    }
+
+    var formattedRemainingAmount: String? {
+        guard let n = remainingAmountNumber else { return nil }
+        return "\(Int(n).formatted()) сум"
+    }
+
+    var formattedInitialAmount: String? {
+        guard let n = initialAmountNumber else { return nil }
+        return "\(Int(n).formatted()) сум"
+    }
 
     var isPaid: Bool {
         (status?.value ?? "").uppercased() == "PAID"
@@ -98,6 +151,7 @@ struct PurchaseRequest: Decodable, Identifiable, Sendable {
         let subcategory: FlexLabeled?
         let city: FlexNamed?
         let district: FlexNamed?
+        let isBalanceBased: Bool?
         let partner: PurchasePartner?
 
         struct PurchasePartner: Decodable, Sendable {

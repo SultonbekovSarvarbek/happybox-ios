@@ -26,6 +26,7 @@ struct ReceivedGiftDetailView: View {
     }
 
     private var redeemed: Bool { voucher.isRedeemed == true }
+    private var isBalance: Bool { voucher.isBalanceBased }
 
     // MARK: - Body
 
@@ -60,7 +61,9 @@ struct ReceivedGiftDetailView: View {
                     HStack(spacing: 6) {
                         Image(systemName: redeemed ? "checkmark.circle.fill" : "gift.fill")
                             .font(.system(size: 13))
-                        Text(redeemed ? "Использован" : "Подарок")
+                        Text(redeemed
+                             ? (isBalance ? "Баланс израсходован" : "Использован")
+                             : "Подарок")
                             .font(.system(size: 14, weight: .semibold))
                     }
                     .padding(.horizontal, 16)
@@ -74,6 +77,35 @@ struct ReceivedGiftDetailView: View {
                 .background(Color(.systemBackground))
 
                 Divider()
+
+                // Balance card (balance-based)
+                if isBalance, let remaining = voucher.formattedRemainingAmount {
+                    VStack(spacing: 8) {
+                        Text("Остаток на сертификате")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Text(remaining)
+                            .font(.system(size: 30, weight: .bold))
+                            .foregroundStyle(redeemed ? Color.secondary : Color.green)
+                        if let initial = voucher.formattedInitialAmount,
+                           let initN = Double(voucher.initialAmount ?? ""),
+                           let remN = voucher.remainingAmountNumber,
+                           initN > 0, remN < initN {
+                            Text("из \(initial)")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 18)
+                    .background(redeemed ? Color(.systemGray6).opacity(0.5) : Color.green.opacity(0.06))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 0)
+                            .stroke((redeemed ? Color.secondary : Color.green).opacity(0.2), lineWidth: 1)
+                    )
+
+                    Divider()
+                }
 
                 // Voucher code card (hidden when redeemed)
                 if let code = voucher.code, !redeemed {
@@ -127,6 +159,44 @@ struct ReceivedGiftDetailView: View {
                     Divider()
                 }
 
+                // Redemption history (balance-based)
+                if isBalance, let history = voucher.redemptions, !history.isEmpty {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text("История списаний")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+
+                        ForEach(history) { item in
+                            HStack(spacing: 12) {
+                                Image(systemName: "minus.circle.fill")
+                                    .foregroundStyle(Color.orange)
+                                    .font(.system(size: 18))
+                                    .padding(.leading, 16)
+
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(item.formattedAmount)
+                                        .font(.system(size: 15, weight: .semibold))
+                                    if let note = item.note, !note.isEmpty {
+                                        Text(note).font(.caption).foregroundStyle(.secondary)
+                                    }
+                                    Text(item.formattedDate)
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                }
+
+                                Spacer()
+                            }
+                            .padding(.vertical, 10)
+                            Divider().padding(.leading, 48)
+                        }
+                    }
+                    .background(Color(.systemBackground))
+
+                    Divider()
+                }
+
                 // Description
                 if let desc = cert?.description, !desc.isEmpty {
                     VStack(alignment: .leading, spacing: 6) {
@@ -150,7 +220,10 @@ struct ReceivedGiftDetailView: View {
                         Divider().padding(.leading, 52)
                     }
 
-                    if let days = cert?.validDays, days > 0 {
+                    if isBalance {
+                        DetailRow(icon: "infinity", label: "Срок действия", value: "Бессрочно", color: categoryColor)
+                        Divider().padding(.leading, 52)
+                    } else if let days = cert?.validDays, days > 0 {
                         DetailRow(icon: "clock.fill", label: "Срок действия", value: "\(days) дней", color: categoryColor)
                         Divider().padding(.leading, 52)
                     }

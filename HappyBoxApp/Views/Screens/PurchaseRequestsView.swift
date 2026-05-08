@@ -144,18 +144,37 @@ private struct PurchaseRequestRow: View {
                 }
 
                 if request.isPaid, let code = request.voucherCode {
-                    HStack(spacing: 4) {
-                        Image(systemName: "ticket.fill")
-                            .font(.system(size: 10))
-                            .foregroundStyle(.green)
-                        Text(code)
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(.primary)
+                    HStack(spacing: 6) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "ticket.fill")
+                                .font(.system(size: 10))
+                                .foregroundStyle(.green)
+                            Text(code)
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(.primary)
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(Color.green.opacity(0.1))
+                        .clipShape(Capsule())
+
+                        if request.isBalanceBased,
+                           let remaining = request.formattedRemainingAmount,
+                           !request.isRedeemed {
+                            HStack(spacing: 4) {
+                                Image(systemName: "creditcard.fill")
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(.orange)
+                                Text(remaining)
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundStyle(.primary)
+                            }
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(Color.orange.opacity(0.12))
+                            .clipShape(Capsule())
+                        }
                     }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
-                    .background(Color.green.opacity(0.1))
-                    .clipShape(Capsule())
                 }
             }
 
