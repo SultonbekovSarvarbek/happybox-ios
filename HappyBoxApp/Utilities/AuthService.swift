@@ -40,17 +40,23 @@ enum AuthError: LocalizedError {
         if lower.contains("user not found") || lower.contains("not found") {
             return "Пользователь не найден"
         }
-        if lower.contains("already exists") || lower.contains("already registered") {
-            return "Пользователь с таким номером уже зарегистрирован"
+        if lower.contains("already exists")
+            || lower.contains("already registered")
+            || lower.contains("already in use")
+            || (lower.contains("phone") && lower.contains("in use"))
+            || (lower.contains("phone") && lower.contains("taken")) {
+            return "Этот номер телефона или имя пользователя уже зарегистрированы"
         }
-        if lower.contains("phone") && lower.contains("taken") {
-            return "Этот номер телефона уже используется"
-        }
-        if lower.contains("username") && (lower.contains("taken") || lower.contains("exists")) {
+        if lower.contains("username") && (lower.contains("taken") || lower.contains("exists") || lower.contains("in use")) {
             return "Это имя пользователя уже занято"
         }
         if statusCode >= 500 {
             return "Ошибка сервера. Попробуйте позже."
+        }
+        // Fall back to the raw server message if it's already in Russian or short enough.
+        let trimmed = message.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty, trimmed.count < 200 {
+            return trimmed
         }
         return "Ошибка. Попробуйте ещё раз."
     }
