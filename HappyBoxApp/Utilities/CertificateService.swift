@@ -157,6 +157,35 @@ final class CertificateService {
         return try decoder.decode([ReceivedVoucher].self, from: data)
     }
 
+    func fetchReceivedGiftOrders(token: String?) async throws -> [MobileGiftOrder] {
+        try await fetchGiftOrders(path: "/mobile/gift-orders/received", token: token)
+    }
+
+    func fetchSentGiftOrders(token: String?) async throws -> [MobileGiftOrder] {
+        try await fetchGiftOrders(path: "/mobile/gift-orders/sent", token: token)
+    }
+
+    private func fetchGiftOrders(path: String, token: String?) async throws -> [MobileGiftOrder] {
+        guard let url = URL(string: baseURL + path) else {
+            throw URLError(.badURL)
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.timeoutInterval = 30
+        if let token {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        let (data, response) = try await URLSession.shared.data(for: request)
+        let http = response as! HTTPURLResponse
+        guard (200...299).contains(http.statusCode) else {
+            throw APIError.from(data: data, statusCode: http.statusCode)
+        }
+        if let items = try? decoder.decode([MobileGiftOrder].self, from: data) { return items }
+        if let wrapped = try? decoder.decode(WrappedArray<MobileGiftOrder>.self, from: data) { return wrapped.data }
+        if let wrapped = try? decoder.decode(WrappedItems<MobileGiftOrder>.self, from: data) { return wrapped.items }
+        return try decoder.decode([MobileGiftOrder].self, from: data)
+    }
+
     func searchUser(username: String? = nil, phone: String? = nil, token: String?) async throws -> UserSearchResult {
         var components = URLComponents(string: baseURL + "/mobile/users/search")
         if let username {

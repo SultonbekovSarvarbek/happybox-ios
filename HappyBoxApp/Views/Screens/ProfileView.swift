@@ -99,6 +99,17 @@ struct ProfileView: View {
                             Text("Мои подарки")
                         }
                     }
+
+                    NavigationLink {
+                        SentGiftsView()
+                    } label: {
+                        HStack {
+                            Image(systemName: "paperplane.fill")
+                                .foregroundStyle(Color.accentColor)
+                                .frame(width: 20)
+                            Text("Я подарил")
+                        }
+                    }
                 }
 
                 // Logout
