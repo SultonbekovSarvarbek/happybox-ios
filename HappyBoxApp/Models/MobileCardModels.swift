@@ -26,6 +26,7 @@ struct MobileCard: Decodable, Identifiable, Sendable {
     let photo: String?
     let instagram: String?
     let description: String?
+    let notes: [String]?
     let certificatesCount: Int?
     let categories: [MobileCardCategory]?
     let locations: [String]?
@@ -53,6 +54,7 @@ struct MobileCardDetail: Decodable, Identifiable, Sendable {
     let photo: String?
     let instagram: String?
     let description: String?
+    let notes: [String]?
     let certificates: [MobileCardCertificate]
 }
 

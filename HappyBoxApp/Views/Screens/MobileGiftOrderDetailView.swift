@@ -152,6 +152,15 @@ struct MobileGiftOrderDetailView: View {
                 }
                 .background(Color(.systemBackground))
 
+                if let banner = NotesBanner(notes: order.partner?.notes) {
+                    Divider()
+                    banner
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .frame(maxWidth: .infinity)
+                        .background(Color(.systemBackground))
+                }
+
                 // Redemption history (balance-based)
                 if isBalance && !order.redemptions.isEmpty {
                     Divider()

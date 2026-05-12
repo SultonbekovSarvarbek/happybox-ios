@@ -45,6 +45,7 @@ struct MobileGiftOrder: Decodable, Identifiable, Sendable {
         let slug: String?
         let photo: String?
         let instagram: String?
+        let notes: [String]?
     }
 
     struct GiftOrderCert: Decodable, Sendable {

@@ -48,6 +48,10 @@ struct CardDetailView: View {
                                 .padding(.horizontal)
                                 .padding(.top)
 
+                            if let banner = NotesBanner(notes: detail.notes) {
+                                banner.padding(.horizontal)
+                            }
+
                             if !services.isEmpty {
                                 Picker("", selection: $selectedTab) {
                                     Text("Сертификаты").tag(0)

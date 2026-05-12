@@ -102,6 +102,10 @@ struct CustomCertificateConfirmView: View {
                             .padding(.horizontal)
                         }
 
+                        if let banner = NotesBanner(notes: card.notes) {
+                            banner.padding(.horizontal)
+                        }
+
                         // Total row
                         HStack {
                             Text("Итого")
