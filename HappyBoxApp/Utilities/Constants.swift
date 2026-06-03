@@ -8,6 +8,11 @@
 import SwiftUI
 
 struct Constants {
+    // Telegram bot — where accounts are created and OTP login codes are sent.
+    struct Bot {
+        static let url = "https://t.me/happybox_gift_bot"
+    }
+
     // Spacing
     struct Spacing {
         static let small: CGFloat = 8

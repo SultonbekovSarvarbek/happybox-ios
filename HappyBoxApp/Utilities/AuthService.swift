@@ -106,6 +106,46 @@ final class AuthService {
         return try await request(path: "/auth/mobile/register", body: body)
     }
 
+    /// Step 1 of passwordless login: ask the backend to send a login code to
+    /// the user's Telegram via the bot.
+    func requestOtp(phone: String) async throws -> OtpRequestResponse {
+        let fullURL = baseURL + "/auth/mobile/otp/request"
+        guard let url = URL(string: fullURL) else { throw AuthError.invalidURL }
+
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.timeoutInterval = 30
+        req.httpBody = try? JSONEncoder().encode(OtpRequestBody(phone: phone))
+
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await URLSession.shared.data(for: req)
+        } catch {
+            throw AuthError.networkError(error)
+        }
+
+        guard let http = response as? HTTPURLResponse else {
+            throw AuthError.invalidResponse(statusCode: 0, message: nil)
+        }
+        let rawBody = String(data: data, encoding: .utf8) ?? ""
+        guard (200...299).contains(http.statusCode) else {
+            throw AuthError.invalidResponse(statusCode: http.statusCode, message: rawBody.isEmpty ? nil : rawBody)
+        }
+        do {
+            return try snakeCaseDecoder.decode(OtpRequestResponse.self, from: data)
+        } catch {
+            throw AuthError.decodingError(error)
+        }
+    }
+
+    /// Step 2 of passwordless login: verify the code and receive an access token.
+    func verifyOtp(phone: String, code: String) async throws -> AuthResponse {
+        let body = OtpVerifyRequest(phone: phone, code: code)
+        return try await request(path: "/auth/mobile/otp/verify", body: body)
+    }
+
     func checkUsername(_ username: String) async throws -> Bool {
         let encoded = username.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? username
         let fullURL = baseURL + "/auth/check-username/\(encoded)"

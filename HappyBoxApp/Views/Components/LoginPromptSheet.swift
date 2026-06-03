@@ -77,7 +77,8 @@ struct LoginPromptSheet: View {
             }
         }
         .sheet(isPresented: $showRegister) {
-            RegisterView(authViewModel: authViewModel) {
+            // Registration happens in the Telegram bot; reuse the OTP login.
+            LoginView(authViewModel: authViewModel) {
                 showRegister = false
                 dismiss()
             }

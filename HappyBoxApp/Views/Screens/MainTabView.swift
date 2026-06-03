@@ -151,7 +151,9 @@ private struct AuthPromptTab: View {
                 }
             }
             .sheet(isPresented: $showRegister) {
-                RegisterView(authViewModel: authViewModel) {
+                // Accounts are created in the Telegram bot; "register" now opens
+                // the same passwordless OTP login (which guides new users to the bot).
+                LoginView(authViewModel: authViewModel) {
                     showRegister = false
                 }
             }

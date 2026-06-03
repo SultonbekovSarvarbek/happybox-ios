@@ -37,6 +37,24 @@ struct RegisterRequest: Encodable, Sendable {
     }
 }
 
+struct OtpRequestBody: Encodable, Sendable {
+    let phone: String
+}
+
+struct OtpVerifyRequest: Encodable, Sendable {
+    let phone: String
+    let code: String
+}
+
+/// Response of POST /auth/mobile/otp/request.
+/// `delivered` = code was sent to Telegram. `reason` is "NO_TELEGRAM" when the
+/// user has no account / hasn't linked the bot yet.
+struct OtpRequestResponse: Decodable, Sendable {
+    let delivered: Bool
+    let channel: String?
+    let reason: String?
+}
+
 struct AuthResponse: Decodable, Sendable {
     let accessToken: String?  // server sends "access_token" → decoded via convertFromSnakeCase
     let token: String?

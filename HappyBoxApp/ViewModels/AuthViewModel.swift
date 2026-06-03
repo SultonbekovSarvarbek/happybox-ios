@@ -65,6 +65,52 @@ class AuthViewModel {
         isLoading = false
     }
 
+    // MARK: - OTP login (passwordless, code delivered via Telegram bot)
+
+    enum OtpOutcome {
+        case sent       // code delivered to Telegram → show code entry
+        case needsBot   // no account / bot not linked → register in the bot first
+        case failed
+    }
+
+    @MainActor
+    func requestOtp(phone: String) async -> OtpOutcome {
+        isLoading = true
+        errorMessage = nil
+        defer { isLoading = false }
+        do {
+            let res = try await AuthService.shared.requestOtp(phone: phone)
+            if res.delivered { return .sent }
+            if res.reason == "NO_TELEGRAM" { return .needsBot }
+            errorMessage = "Не удалось отправить код. Попробуйте позже."
+            return .failed
+        } catch {
+            errorMessage = error.localizedDescription
+            return .failed
+        }
+    }
+
+    @MainActor
+    func verifyOtp(phone: String, code: String) async {
+        isLoading = true
+        errorMessage = nil
+        do {
+            let response = try await AuthService.shared.verifyOtp(phone: phone, code: code)
+            guard let t = response.resolvedToken else {
+                errorMessage = "Не удалось получить токен авторизации."
+                isLoading = false
+                return
+            }
+            saveToken(t)
+            let profile = try await AuthService.shared.fetchProfile(token: t)
+            saveProfile(profile)
+            isLoggedIn = true
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        isLoading = false
+    }
+
     // MARK: - Register
 
     @MainActor
