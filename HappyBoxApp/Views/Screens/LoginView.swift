@@ -41,6 +41,10 @@ struct LoginView: View {
                     errorBanner
                     primaryButton
 
+                    if step == .code {
+                        codeBotHint
+                    }
+
                     Spacer()
                 }
                 .animation(.easeInOut(duration: 0.25), value: step)
@@ -151,6 +155,34 @@ struct LoginView: View {
             }
         }
         .padding(.horizontal, 24)
+    }
+
+    // Shown on the code step: if the push didn't arrive, the user can open the
+    // bot and read the login code there.
+    private var codeBotHint: some View {
+        VStack(spacing: 10) {
+            Text("Не пришло уведомление? Открой Telegram-бот — код придёт туда.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+
+            Button {
+                if let url = URL(string: Constants.Bot.url) { openURL(url) }
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "paperplane.fill")
+                    Text("Открыть Telegram-бот")
+                        .fontWeight(.semibold)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(Color.accentColor.opacity(0.1))
+                .foregroundStyle(Color.accentColor)
+                .cornerRadius(12)
+            }
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 4)
     }
 
     @ViewBuilder private var errorBanner: some View {
