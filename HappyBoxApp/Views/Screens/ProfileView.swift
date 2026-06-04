@@ -65,12 +65,12 @@ struct ProfileView: View {
                         }
                     }
 
-                    if !user.birthDate.isEmpty {
+                    if let birthDate = user.birthDate, !birthDate.isEmpty {
                         Section("Личные данные") {
                             ProfileRow(
                                 icon: "calendar",
                                 label: "Дата рождения",
-                                value: formattedDate(user.birthDate)
+                                value: formattedDate(birthDate)
                             )
                         }
                     }

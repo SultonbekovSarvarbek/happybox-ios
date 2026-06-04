@@ -72,7 +72,7 @@ struct UserProfile: Codable, Sendable {
     var lastName: String
     var phone: String
     var telegramUsername: String?
-    var birthDate: String
+    var birthDate: String?  // null for bot-registered users (the bot never asks for it)
     var role: String?
 
     var fullName: String {
