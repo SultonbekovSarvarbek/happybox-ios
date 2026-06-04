@@ -20,7 +20,6 @@ struct LoginView: View {
     @State private var phone: String = ""
     @State private var code: String = ""
     @State private var step: Step = .phone
-    @State private var needsBot: Bool = false
     @FocusState private var focused: Bool
 
     private enum Step { case phone, code }
@@ -42,15 +41,10 @@ struct LoginView: View {
                     errorBanner
                     primaryButton
 
-                    if step == .phone {
-                        botFooter
-                    }
-
                     Spacer()
                 }
                 .animation(.easeInOut(duration: 0.25), value: step)
                 .animation(.easeInOut(duration: 0.25), value: authViewModel.errorMessage)
-                .animation(.easeInOut(duration: 0.25), value: needsBot)
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -208,48 +202,23 @@ struct LoginView: View {
         return step == .phone ? phone.count < 9 : code.count < 6
     }
 
-    @ViewBuilder private var botFooter: some View {
-        VStack(spacing: 10) {
-            Text(needsBot
-                 ? "Похоже, у вас ещё нет профиля. Создайте его в нашем Telegram-боте, затем вернитесь и войдите."
-                 : "Ещё нет профиля?")
-                .font(.footnote)
-                .foregroundStyle(needsBot ? .primary : .secondary)
-                .multilineTextAlignment(.center)
-
-            Button {
-                if let url = URL(string: Constants.Bot.url) { openURL(url) }
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "paperplane.fill")
-                    Text("Открыть Telegram-бота")
-                        .fontWeight(.semibold)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-                .background(Color.accentColor.opacity(0.1))
-                .foregroundStyle(Color.accentColor)
-                .cornerRadius(12)
-            }
-        }
-        .padding(.horizontal, 24)
-        .padding(.top, 4)
-    }
-
     // MARK: - Actions
 
     private func primaryAction() {
         focused = false
         if step == .phone {
             guard phone.count >= 9 else { return }
-            needsBot = false
             Task {
                 let outcome = await authViewModel.requestOtp(phone: fullPhone)
                 switch outcome {
                 case .sent:
                     step = .code
                 case .needsBot:
-                    needsBot = true
+                    // No profile yet → send the user to the bot to register. The bot
+                    // sends a login code right after sign-up, so move straight to the
+                    // code step: the field is ready when the user comes back.
+                    if let url = URL(string: Constants.Bot.url) { openURL(url) }
+                    step = .code
                 case .failed:
                     break
                 }
