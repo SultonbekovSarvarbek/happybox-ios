@@ -20,11 +20,14 @@ enum AuthError: LocalizedError {
         case .networkError(let error):
             return "Ошибка сети: \(error.localizedDescription)"
         case .invalidResponse(let statusCode, let message):
-            if statusCode == 401 {
-                return "Неверный номер телефона или пароль"
-            }
+            // Prefer the server's specific reason (expired code, invalid code,
+            // too many attempts, etc.). Fall back to the generic credentials
+            // message only when the server didn't say why.
             if let msg = message, !msg.isEmpty {
                 return Self.localizedServerMessage(msg, statusCode: statusCode)
+            }
+            if statusCode == 401 {
+                return "Неверный номер телефона или пароль"
             }
             return "Ошибка сервера. Попробуйте позже."
         case .decodingError:
@@ -34,6 +37,17 @@ enum AuthError: LocalizedError {
 
     private static func localizedServerMessage(_ message: String, statusCode: Int) -> String {
         let lower = message.lowercased()
+        // OTP (passwordless) login — check before the generic "not found" rule,
+        // since the expired-code message also contains "not found".
+        if lower.contains("expired") {
+            return "Код истёк. Запросите новый код."
+        }
+        if lower.contains("too many attempts") {
+            return "Слишком много попыток. Запросите новый код."
+        }
+        if lower.contains("invalid code") {
+            return "Неверный код. Проверьте и попробуйте ещё раз."
+        }
         if lower.contains("invalid credentials") || lower.contains("wrong password") {
             return "Неверный номер телефона или пароль"
         }
