@@ -23,6 +23,9 @@ final class NotificationManager {
 
     private let reminderNotificationID = "happybox.gift.reminder"
 
+    /// Number of pre-scheduled one-shot reminders (20 × 3 days = ~60 days ahead)
+    private let reminderBatchSize = 20
+
     // MARK: - Init
 
     private init() {
@@ -58,10 +61,14 @@ final class NotificationManager {
     /// Check if gift reminders are already scheduled
     func hasScheduledReminders() async -> Bool {
         let requests = await notificationCenter.pendingNotificationRequests()
-        return requests.contains { $0.identifier == reminderNotificationID }
+        // Only batch ids ("happybox.gift.reminder.N") count — the legacy daily
+        // notification ("happybox.gift.reminder") must be replaced, not kept
+        return requests.contains { $0.identifier.hasPrefix(reminderNotificationID + ".") }
     }
 
-    /// Schedule a daily repeating notification to remind about gifts
+    /// Schedule gift reminders at 12:00 once every 3 days.
+    /// iOS has no repeating "every N days" trigger, so a batch of one-shot
+    /// notifications is pre-scheduled and refilled on launch once it runs out.
     func scheduleGiftReminder() {
         cancelGiftReminder()
 
@@ -73,28 +80,34 @@ final class NotificationManager {
         content.sound = .default
         content.badge = 1
 
-        // Every day at 12:00
-        var dateComponents = DateComponents()
-        dateComponents.hour = 12
-        dateComponents.minute = 0
+        let calendar = Calendar.current
+        for index in 0..<reminderBatchSize {
+            guard let day = calendar.date(byAdding: .day, value: (index + 1) * 3, to: Date()) else { continue }
 
-        let trigger = UNCalendarNotificationTrigger(
-            dateMatching: dateComponents,
-            repeats: true
-        )
+            var dateComponents = calendar.dateComponents([.year, .month, .day], from: day)
+            dateComponents.hour = 12
+            dateComponents.minute = 0
 
-        let request = UNNotificationRequest(
-            identifier: reminderNotificationID,
-            content: content,
-            trigger: trigger
-        )
+            let trigger = UNCalendarNotificationTrigger(
+                dateMatching: dateComponents,
+                repeats: false
+            )
 
-        notificationCenter.add(request) { _ in }
+            let request = UNNotificationRequest(
+                identifier: "\(reminderNotificationID).\(index)",
+                content: content,
+                trigger: trigger
+            )
+
+            notificationCenter.add(request) { _ in }
+        }
     }
 
-    /// Cancel gift reminder notification
+    /// Cancel gift reminder notifications (including the legacy daily one)
     func cancelGiftReminder() {
-        notificationCenter.removePendingNotificationRequests(withIdentifiers: [reminderNotificationID])
+        var ids = (0..<reminderBatchSize).map { "\(reminderNotificationID).\($0)" }
+        ids.append(reminderNotificationID)
+        notificationCenter.removePendingNotificationRequests(withIdentifiers: ids)
     }
 
     /// Cancel all pending notifications
