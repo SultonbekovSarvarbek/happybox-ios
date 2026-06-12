@@ -20,36 +20,17 @@ struct CertificateCard: View {
     var body: some View {
         Button(action: onTap) {
             VStack(alignment: .leading, spacing: 0) {
-                // Image header or fallback
-                ZStack(alignment: .topLeading) {
-                    if let imageURL = certificate.imageURL, !imageURL.isEmpty,
-                       let url = URL(string: imageURL) {
-                        AsyncImage(url: url) { phase in
-                            switch phase {
-                            case .empty:
-                                imagePlaceholder
-                            case .success(let image):
-                                image
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(height: 140)
-                                    .clipped()
-                            case .failure:
-                                imagePlaceholder
-                            @unknown default:
-                                imagePlaceholder
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 140)
-                        .clipped()
-                    } else {
-                        imagePlaceholder
-                    }
+                VStack(alignment: .leading, spacing: 12) {
+                // Title with badge/rating
+                HStack(alignment: .top, spacing: 8) {
+                    Text(certificate.fullTitle)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(certificate.isDisabled ? .secondary : .primary)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
 
-                }
-                .overlay(alignment: .topTrailing) {
-                    // Badge overlay (top-right)
+                    Spacer(minLength: 0)
+
                     if let badge = certificate.badge {
                         HStack(spacing: 4) {
                             Image(systemName: badge.icon)
@@ -60,9 +41,8 @@ struct CertificateCard: View {
                         .padding(.horizontal, 10)
                         .padding(.vertical, 5)
                         .foregroundStyle(badge.color)
-                        .background(Color(.systemBackground).opacity(0.92))
+                        .background(badge.color.opacity(0.1))
                         .cornerRadius(8)
-                        .padding(8)
                     } else if let rating = certificate.rating {
                         HStack(spacing: 4) {
                             Image(systemName: "star.fill")
@@ -73,20 +53,10 @@ struct CertificateCard: View {
                         .padding(.horizontal, 10)
                         .padding(.vertical, 5)
                         .foregroundStyle(Color(red: 0.9, green: 0.65, blue: 0.1))
-                        .background(Color(.systemBackground).opacity(0.92))
+                        .background(Color(red: 0.9, green: 0.65, blue: 0.1).opacity(0.1))
                         .cornerRadius(8)
-                        .padding(8)
                     }
                 }
-                .cornerRadius(16)
-
-                VStack(alignment: .leading, spacing: 12) {
-                // Title
-                Text(certificate.fullTitle)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(certificate.isDisabled ? .secondary : .primary)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
 
                 // Description
                 Text(certificate.description)
@@ -171,19 +141,6 @@ struct CertificateCard: View {
         }
         .buttonStyle(.plain)
         .disabled(false) // Always allow tap to see details
-    }
-
-    // MARK: - Image Placeholder
-
-    private var imagePlaceholder: some View {
-        ZStack {
-            Color(.systemGray6)
-            Image(systemName: "photo")
-                .font(.system(size: 36))
-                .foregroundStyle(Color(.systemGray3))
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: 140)
     }
 }
 

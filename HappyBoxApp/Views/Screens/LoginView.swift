@@ -15,12 +15,17 @@ struct LoginView: View {
     @Environment(\.openURL) private var openURL
 
     var authViewModel: AuthViewModel
+    var mode: Mode = .login
     var onSuccess: () -> Void
 
     @State private var phone: String = ""
     @State private var code: String = ""
     @State private var step: Step = .phone
     @FocusState private var focused: Bool
+
+    /// Whether the screen was opened to sign in or to register. The flow is the
+    /// same (phone → code); only the heading wording changes.
+    enum Mode { case login, register }
 
     private enum Step { case phone, code }
 
@@ -70,11 +75,15 @@ struct LoginView: View {
                 .font(.system(size: 64))
                 .foregroundStyle(Color.accentColor)
 
-            Text(step == .phone ? "Вход" : "Введите код")
+            Text(step == .phone
+                 ? (mode == .register ? "Регистрация" : "Вход")
+                 : "Введите код")
                 .font(.system(size: 28, weight: .bold))
 
             Text(step == .phone
-                 ? "Войдите по номеру телефона"
+                 ? (mode == .register
+                    ? "Зарегистрируйтесь по номеру телефона"
+                    : "Войдите по номеру телефона")
                  : "Мы отправили код в Telegram-бот HappyBox")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
