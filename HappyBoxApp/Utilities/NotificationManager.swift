@@ -23,8 +23,23 @@ final class NotificationManager {
 
     private let reminderNotificationID = "happybox.gift.reminder"
 
-    /// Number of pre-scheduled one-shot reminders (20 × 3 days = ~60 days ahead)
-    private let reminderBatchSize = 20
+    /// Days of the month the gift reminder fires on (twice a month)
+    private let reminderDays = [1, 15]
+
+    /// Hour of the day (24h) the reminder fires at
+    private let reminderHour = 12
+
+    private var reminderIDs: [String] {
+        reminderDays.map { "\(reminderNotificationID).day\($0)" }
+    }
+
+    /// Identifiers from previous schedules that must be cleared on migration:
+    /// the daily notification and the every-3-days batch of 20 one-shots
+    private var legacyReminderIDs: [String] {
+        var ids = (0..<20).map { "\(reminderNotificationID).\($0)" }
+        ids.append(reminderNotificationID)
+        return ids
+    }
 
     // MARK: - Init
 
@@ -58,17 +73,18 @@ final class NotificationManager {
 
     // MARK: - Schedule Notifications
 
-    /// Check if gift reminders are already scheduled
+    /// Check if gift reminders are already scheduled.
+    /// Only the current identifiers count — a user still carrying a previous
+    /// schedule reports `false` so it gets replaced on next launch.
     func hasScheduledReminders() async -> Bool {
         let requests = await notificationCenter.pendingNotificationRequests()
-        // Only batch ids ("happybox.gift.reminder.N") count — the legacy daily
-        // notification ("happybox.gift.reminder") must be replaced, not kept
-        return requests.contains { $0.identifier.hasPrefix(reminderNotificationID + ".") }
+        let pending = Set(requests.map(\.identifier))
+        return reminderIDs.allSatisfy(pending.contains)
     }
 
-    /// Schedule gift reminders at 12:00 once every 3 days.
-    /// iOS has no repeating "every N days" trigger, so a batch of one-shot
-    /// notifications is pre-scheduled and refilled on launch once it runs out.
+    /// Schedule gift reminders at 12:00 on the 1st and 15th of every month.
+    /// A calendar trigger matching only day/hour/minute repeats monthly, so two
+    /// repeating requests cover the schedule indefinitely — no refill needed.
     func scheduleGiftReminder() {
         cancelGiftReminder()
 
@@ -80,21 +96,19 @@ final class NotificationManager {
         content.sound = .default
         content.badge = 1
 
-        let calendar = Calendar.current
-        for index in 0..<reminderBatchSize {
-            guard let day = calendar.date(byAdding: .day, value: (index + 1) * 3, to: Date()) else { continue }
-
-            var dateComponents = calendar.dateComponents([.year, .month, .day], from: day)
-            dateComponents.hour = 12
+        for day in reminderDays {
+            var dateComponents = DateComponents()
+            dateComponents.day = day
+            dateComponents.hour = reminderHour
             dateComponents.minute = 0
 
             let trigger = UNCalendarNotificationTrigger(
                 dateMatching: dateComponents,
-                repeats: false
+                repeats: true
             )
 
             let request = UNNotificationRequest(
-                identifier: "\(reminderNotificationID).\(index)",
+                identifier: "\(reminderNotificationID).day\(day)",
                 content: content,
                 trigger: trigger
             )
@@ -103,11 +117,11 @@ final class NotificationManager {
         }
     }
 
-    /// Cancel gift reminder notifications (including the legacy daily one)
+    /// Cancel gift reminder notifications (including any from previous schedules)
     func cancelGiftReminder() {
-        var ids = (0..<reminderBatchSize).map { "\(reminderNotificationID).\($0)" }
-        ids.append(reminderNotificationID)
-        notificationCenter.removePendingNotificationRequests(withIdentifiers: ids)
+        notificationCenter.removePendingNotificationRequests(
+            withIdentifiers: reminderIDs + legacyReminderIDs
+        )
     }
 
     /// Cancel all pending notifications
